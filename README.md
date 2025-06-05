@@ -289,14 +289,14 @@ Test suite mencakup:
 ## 🔄 CI/CD Pipeline
 
 Pipeline GitHub Actions akan otomatis berjalan pada:
-- Push ke branch `main` atau `develop`
-- Pull request ke branch `main`
+- Push ke branch `master` atau `develop`
+- Pull request ke branch `master`
 
 Pipeline melakukan:
 1. **Test Stage**: Setup PostgreSQL test database, install dependencies, run migrations & seeding, execute unit tests dengan coverage reporting
 2. **Security Stage**: Menjalankan npm audit untuk security scanning
 3. **Build Stage**: Build application dan create artifacts
-4. **Deploy Stage**: Deploy ke staging (branch develop) dan production (branch main) - manual approval required
+4. **Deploy Stage**: Deploy ke staging (branch develop) dan production (branch master) - manual approval required
 
 ### Pipeline Status
 Untuk melihat status pipeline:
