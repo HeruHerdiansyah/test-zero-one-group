@@ -229,8 +229,7 @@ graph TB
         StagingDB[(Staging PostgreSQL<br/>AWS RDS)]
         StagingApp --> StagingDB
     end
-    
-    subgraph "Production Environment"
+      subgraph "Production Environment"
         ProdLB[Load Balancer<br/>AWS ALB]
         ProdApp1[Production API 1<br/>ECS/EKS]
         ProdApp2[Production API 2<br/>ECS/EKS]
@@ -242,13 +241,15 @@ graph TB
         ProdApp1 --> ProdDB
         ProdApp2 --> ProdDB
         ProdApp1 --> ProdReplica
-        ProdApp2 --> ProdReplica    end
+        ProdApp2 --> ProdReplica
+    end
       GitHub --> Pipeline
     Pipeline --> Tests
     Tests --> Build
     Build --> StagingApp
     StagingApp --> ProdLB
-      style GitHub fill:#e1f5fe
+    
+    style GitHub fill:#e1f5fe
     style ProdDB fill:#f3e5f5
     style ProdLB fill:#e8f5e8
 ```
