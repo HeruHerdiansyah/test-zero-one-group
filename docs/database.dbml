@@ -14,6 +14,7 @@ Table news {
   title varchar(255) [not null, note: 'Judul berita']
   content text [not null, note: 'Konten berita']
   status varchar(20) [not null, default: 'draft', note: 'Status: draft, published, deleted']
+  deleted_at timestamp [null, note: 'Tanggal soft delete']
   created_at timestamp [default: `now()`, note: 'Tanggal pembuatan']
   updated_at timestamp [default: `now()`, note: 'Tanggal terakhir diupdate']
   

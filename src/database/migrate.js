@@ -37,14 +37,14 @@ const migrations = [
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
   `,
-  
-  // Migrasi 2: Membuat tabel news
+    // Migrasi 2: Membuat tabel news
   `
   CREATE TABLE IF NOT EXISTS news (
     id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published', 'deleted')),
+    deleted_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
@@ -60,15 +60,23 @@ const migrations = [
     UNIQUE(news_id, topic_id)
   );
   `,
-  
-  // Migrasi 4: Membuat index untuk performa
+    // Migrasi 4: Membuat index untuk performa
   `
   CREATE INDEX IF NOT EXISTS idx_news_status ON news(status);
   CREATE INDEX IF NOT EXISTS idx_news_topics_news_id ON news_topics(news_id);
   CREATE INDEX IF NOT EXISTS idx_news_topics_topic_id ON news_topics(topic_id);
   `,
   
-  // Migrasi 5: Membuat trigger untuk auto-update timestamp
+  // Migrasi 5: Menambahkan kolom deleted_at jika belum ada
+  `
+  DO $$ 
+  BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'news' AND column_name = 'deleted_at') THEN
+      ALTER TABLE news ADD COLUMN deleted_at TIMESTAMP NULL;
+    END IF;
+  END $$;
+  `,
+  // Migrasi 6: Membuat trigger untuk auto-update timestamp
   `
   CREATE OR REPLACE FUNCTION update_updated_at_column()
   RETURNS TRIGGER AS $$
@@ -78,9 +86,11 @@ const migrations = [
   END;
   $$ language 'plpgsql';
   
+  DROP TRIGGER IF EXISTS update_topics_updated_at ON topics;
   CREATE TRIGGER update_topics_updated_at BEFORE UPDATE ON topics
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
     
+  DROP TRIGGER IF EXISTS update_news_updated_at ON news;
   CREATE TRIGGER update_news_updated_at BEFORE UPDATE ON news
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
   `

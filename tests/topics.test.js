@@ -27,7 +27,6 @@ describe('Topics API Tests', () => {
 
     await app.close();
   });
-
   describe('GET /api/topics', () => {
     it('harus mengembalikan list topics', async () => {
       const response = await app.inject({
@@ -39,7 +38,58 @@ describe('Topics API Tests', () => {
       const body = JSON.parse(response.body);
       expect(body.success).toBe(true);
       expect(Array.isArray(body.data)).toBe(true);
-      expect(typeof body.total).toBe('number');
+      expect(typeof body.pagination).toBe('object');
+      expect(typeof body.pagination.total).toBe('number');
+      expect(typeof body.pagination.page).toBe('number');
+      expect(typeof body.pagination.limit).toBe('number');
+      expect(typeof body.pagination.totalPages).toBe('number');
+      expect(typeof body.pagination.hasNext).toBe('boolean');
+      expect(typeof body.pagination.hasPrev).toBe('boolean');
+    });
+
+    it('harus mendukung pagination dengan parameter page dan limit', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/topics?page=1&limit=2'
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.success).toBe(true);
+      expect(Array.isArray(body.data)).toBe(true);
+      expect(body.data.length).toBeLessThanOrEqual(2);
+      expect(body.pagination.page).toBe(1);
+      expect(body.pagination.limit).toBe(2);
+      expect(typeof body.pagination.total).toBe('number');
+      expect(typeof body.pagination.totalPages).toBe('number');
+    });
+
+    it('harus mendukung sorting dengan order_by dan sort_type', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/topics?order_by=name&sort_type=ASC&limit=5'
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.success).toBe(true);
+      expect(Array.isArray(body.data)).toBe(true);
+      
+      // Verify sorting (names should be in ascending order)
+      for (let i = 1; i < body.data.length; i++) {
+        expect(body.data[i].name.localeCompare(body.data[i-1].name)).toBeGreaterThanOrEqual(0);
+      }
+    });
+
+    it('harus menolak parameter pagination yang tidak valid', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/topics?page=0&limit=101'
+      });
+
+      expect(response.statusCode).toBe(400);
+      const body = JSON.parse(response.body);
+      expect(body.success).toBe(false);
     });
 
     it('setiap topic harus memiliki field yang diperlukan', async () => {

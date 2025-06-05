@@ -13,7 +13,7 @@
   "paths": {
     "/api/news": {
       "get": {
-        "description": "Mendapatkan semua berita dengan filter opsional",
+        "description": "Mendapatkan semua berita dengan filter opsional dan pagination",
         "tags": [
           "News"
         ],
@@ -36,6 +36,52 @@
             "required": false,
             "in": "query",
             "name": "topic"
+          },
+          {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "description": "Nomor halaman untuk pagination",
+            "required": false,
+            "in": "query",
+            "name": "page"
+          },
+          {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 10,
+            "description": "Jumlah item per halaman (maksimal 100)",
+            "required": false,
+            "in": "query",
+            "name": "limit"
+          },
+          {
+            "type": "string",
+            "enum": [
+              "id",
+              "title",
+              "status",
+              "created_at",
+              "updated_at"
+            ],
+            "default": "created_at",
+            "description": "Field untuk sorting",
+            "required": false,
+            "in": "query",
+            "name": "order_by"
+          },
+          {
+            "type": "string",
+            "enum": [
+              "ASC",
+              "DESC"
+            ],
+            "default": "DESC",
+            "description": "Tipe sorting (ASC atau DESC)",
+            "required": false,
+            "in": "query",
+            "name": "sort_type"
           }
         ],
         "responses": {
@@ -94,6 +140,12 @@
                         },
                         "description": "Daftar topics yang terkait dengan berita"
                       },
+                      "deleted_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Waktu ketika berita dihapus (soft delete)"
+                      },
                       "created_at": {
                         "type": "string",
                         "format": "date-time"
@@ -105,8 +157,34 @@
                     }
                   }
                 },
-                "total": {
-                  "type": "integer"
+                "pagination": {
+                  "type": "object",
+                  "properties": {
+                    "page": {
+                      "type": "integer",
+                      "description": "Halaman saat ini"
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "description": "Jumlah item per halaman"
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "Total jumlah item"
+                    },
+                    "totalPages": {
+                      "type": "integer",
+                      "description": "Total jumlah halaman"
+                    },
+                    "hasNext": {
+                      "type": "boolean",
+                      "description": "Apakah ada halaman selanjutnya"
+                    },
+                    "hasPrev": {
+                      "type": "boolean",
+                      "description": "Apakah ada halaman sebelumnya"
+                    }
+                  }
                 }
               }
             }
@@ -214,6 +292,12 @@
                       },
                       "description": "Daftar topics yang terkait dengan berita"
                     },
+                    "deleted_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true,
+                      "description": "Waktu ketika berita dihapus (soft delete)"
+                    },
                     "created_at": {
                       "type": "string",
                       "format": "date-time"
@@ -298,6 +382,12 @@
                         }
                       },
                       "description": "Daftar topics yang terkait dengan berita"
+                    },
+                    "deleted_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true,
+                      "description": "Waktu ketika berita dihapus (soft delete)"
                     },
                     "created_at": {
                       "type": "string",
@@ -432,6 +522,12 @@
                       },
                       "description": "Daftar topics yang terkait dengan berita"
                     },
+                    "deleted_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true,
+                      "description": "Waktu ketika berita dihapus (soft delete)"
+                    },
                     "created_at": {
                       "type": "string",
                       "format": "date-time"
@@ -526,6 +622,12 @@
                       },
                       "description": "Daftar topics yang terkait dengan berita"
                     },
+                    "deleted_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true,
+                      "description": "Waktu ketika berita dihapus (soft delete)"
+                    },
                     "created_at": {
                       "type": "string",
                       "format": "date-time"
@@ -544,7 +646,7 @@
     },
     "/api/topics": {
       "get": {
-        "description": "Mendapatkan semua topics dengan jumlah berita terkait, dengan opsi pencarian",
+        "description": "Mendapatkan semua topics dengan jumlah berita terkait, dengan opsi pencarian dan pagination",
         "tags": [
           "Topics"
         ],
@@ -555,6 +657,52 @@
             "required": false,
             "in": "query",
             "name": "q"
+          },
+          {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "description": "Nomor halaman untuk pagination",
+            "required": false,
+            "in": "query",
+            "name": "page"
+          },
+          {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 10,
+            "description": "Jumlah item per halaman (maksimal 100)",
+            "required": false,
+            "in": "query",
+            "name": "limit"
+          },
+          {
+            "type": "string",
+            "enum": [
+              "id",
+              "name",
+              "created_at",
+              "updated_at",
+              "news_count"
+            ],
+            "default": "name",
+            "description": "Field untuk sorting",
+            "required": false,
+            "in": "query",
+            "name": "order_by"
+          },
+          {
+            "type": "string",
+            "enum": [
+              "ASC",
+              "DESC"
+            ],
+            "default": "DESC",
+            "description": "Tipe sorting (ASC atau DESC)",
+            "required": false,
+            "in": "query",
+            "name": "sort_type"
           }
         ],
         "responses": {
@@ -623,8 +771,34 @@
                     }
                   }
                 },
-                "total": {
-                  "type": "integer"
+                "pagination": {
+                  "type": "object",
+                  "properties": {
+                    "page": {
+                      "type": "integer",
+                      "description": "Halaman saat ini"
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "description": "Jumlah item per halaman"
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "Total jumlah item"
+                    },
+                    "totalPages": {
+                      "type": "integer",
+                      "description": "Total jumlah halaman"
+                    },
+                    "hasNext": {
+                      "type": "boolean",
+                      "description": "Apakah ada halaman selanjutnya"
+                    },
+                    "hasPrev": {
+                      "type": "boolean",
+                      "description": "Apakah ada halaman sebelumnya"
+                    }
+                  }
                 }
               }
             }

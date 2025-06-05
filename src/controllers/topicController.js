@@ -1,12 +1,34 @@
 import TopicModel from '../models/topicModel.js';
 
-class TopicController {  // GET /api/topics - Mendapatkan semua topics dengan optional search
+class TopicController {  // GET /api/topics - Mendapatkan semua topics dengan optional search  // GET /api/topics - Mendapatkan semua topics dengan optional search dan pagination
   static async getAllTopics(request, reply) {
     try {
-      const { q } = request.query;
+      const { q, page, limit, order_by, sort_type } = request.query;
       const searchQuery = q ? q.trim() : null;
       
-      const topics = await TopicModel.getAll(searchQuery);
+      const pagination = {
+        page: page ? parseInt(page) : 1,
+        limit: limit ? parseInt(limit) : 10,
+        order_by: order_by || 'name',
+        sort_type: sort_type || 'ASC'
+      };
+      
+      // Validasi pagination parameters
+      if (pagination.page < 1) {
+        return reply.code(400).send({
+          success: false,
+          message: 'Parameter page harus lebih besar dari 0'
+        });
+      }
+      
+      if (pagination.limit < 1 || pagination.limit > 100) {
+        return reply.code(400).send({
+          success: false,
+          message: 'Parameter limit harus antara 1-100'
+        });
+      }
+      
+      const result = await TopicModel.getAll(searchQuery, pagination);
       
       const message = searchQuery 
         ? `Berhasil mencari topics dengan kata kunci "${searchQuery}"`
@@ -15,8 +37,8 @@ class TopicController {  // GET /api/topics - Mendapatkan semua topics dengan op
       return reply.code(200).send({
         success: true,
         message: message,
-        data: topics,
-        total: topics.length
+        data: result.data,
+        pagination: result.pagination
       });
     } catch (error) {
       request.log.error(error);

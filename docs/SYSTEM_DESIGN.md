@@ -62,12 +62,12 @@ graph TB
 ## 🗂️ Database Entity Relationship Diagram
 
 ```mermaid
-erDiagram
-    NEWS {
+erDiagram    NEWS {
         int id PK "Primary Key, Auto Increment"
         varchar title "NOT NULL, Max 255 chars"
         text content "NOT NULL"
         varchar status "NOT NULL, CHECK (draft|published|deleted)"
+        timestamp deleted_at "NULL, Soft delete timestamp"
         timestamp created_at "DEFAULT CURRENT_TIMESTAMP"
         timestamp updated_at "DEFAULT CURRENT_TIMESTAMP"
     }

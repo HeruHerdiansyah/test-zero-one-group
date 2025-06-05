@@ -260,79 +260,204 @@ Implementasikan security best practices:
 Review code untuk potential vulnerabilities.
 ```
 
-## 🔄 Iterative Prompts untuk Debugging
+## 📝 Recent Implementation Prompts
 
-### Error Handling
+### Implementation of Pagination and Soft Delete (June 2025)
+
+#### Final Implementation Request
 ```prompt
-Saya mendapat error [specific error]. Analisis kemungkinan penyebab dan berikan solusi:
-1. Check konfigurasi database connection
-2. Verify environment variables
-3. Review query syntax
-4. Check data types compatibility
-5. Validate input parameters
-
-Provide step-by-step debugging approach.
+tolong ubah dengan ketentuan sebagai berikut:
+- buat pagination pada setiap api get all dengan query params (page, limit, order_by, sort_type)
+- tambahkan kolom deleted_at ketika news di delete secara soft atau berubah status menjadi deleted. namun ketika setelah di soft delete lalu status diubah selain deleted, maka deleted_at akan menjadi null kembali
 ```
 
-### Performance Issues
+#### Pagination Implementation
 ```prompt
-Aplikasi mengalami slow response pada endpoint [specific endpoint]. 
-Analisis dan optimize:
-1. Database query performance
-2. N+1 query problems
-3. Index effectiveness
-4. Memory usage
-5. Network latency
-
-Suggest specific improvements dengan measurement approach.
+Implementasikan pagination pada semua GET endpoints dengan:
+- Query parameters: page, limit, order_by, sort_type
+- Validation: page > 0, limit antara 1-100
+- Response format standardized dengan pagination object:
+  {
+    data: [...],
+    pagination: {
+      page, limit, total, totalPages, hasNext, hasPrev
+    }
+  }
+- SQL query optimization dengan OFFSET/LIMIT
+- Order validation untuk prevent SQL injection
+- Consistent implementation across News dan Topics endpoints
 ```
 
-### Test Failures
+#### Soft Delete with deleted_at Column
 ```prompt
-Test [test name] gagal dengan error [error message].
-Debug dan fix:
-1. Check test environment setup
-2. Verify test data isolation
-3. Review async/await handling
-4. Check database state
-5. Validate mock data
-
-Provide corrected test implementation.
+Implementasikan soft delete logic dengan kolom deleted_at:
+- Database migration untuk menambah column deleted_at TIMESTAMP NULL
+- Logic dalam NewsModel.update():
+  - Set deleted_at = current timestamp ketika status berubah ke 'deleted'
+  - Set deleted_at = null ketika status berubah dari 'deleted' ke status lain
+- Update NewsModel.delete() untuk set status='deleted' dan deleted_at
+- Maintain hard delete functionality dengan query parameter ?hard=true
+- Update response schemas untuk include deleted_at field
+- Comprehensive testing untuk semua scenarios
 ```
 
-## 📊 AI Impact Metrics
+#### Database Schema Updates
+```prompt
+Update database schema documentation untuk reflect perubahan:
+- docs/database.dbml: tambah deleted_at column
+- docs/SYSTEM_DESIGN.md: update ERD diagram
+- README.md: update database schema section
+- Ensure consistency across all documentation files
+```
 
-### Development Efficiency
-- **Code Generation**: ~60% faster boilerplate creation
-- **Documentation**: ~70% faster comprehensive docs
-- **Testing**: ~50% faster test case creation
-- **Debugging**: ~40% faster issue resolution
+#### Testing Implementation
+```prompt
+Update test suite untuk cover new functionality:
+- Pagination testing: validate response structure, parameter validation
+- Soft delete testing: verify deleted_at behavior
+- Status transition testing: deleted → other status clears deleted_at
+- Edge cases: invalid pagination parameters, boundary conditions
+- Integration testing untuk full workflow
+- Maintain 100% test coverage
+```
 
-### Code Quality Improvements
-- **Consistency**: Uniform coding patterns across project
-- **Best Practices**: Automatic implementation of industry standards
-- **Error Handling**: Comprehensive error scenarios coverage
-- **Documentation**: Complete inline and external documentation
+### 3. Advanced Features Implementation
 
-### Learning & Knowledge Transfer
-- **Pattern Recognition**: Consistent architectural patterns
-- **Best Practices**: Implementation of proven solutions
-- **Code Review**: AI-assisted code quality checks
-- **Knowledge Documentation**: Comprehensive project documentation
+#### Pagination Implementation
+```prompt
+Implementasikan pagination untuk semua GET list endpoints dengan:
+- Query parameters: page, limit, order_by, sort_type
+- Validation: page >= 1, limit 1-100, order_by whitelist, sort_type ASC/DESC
+- Response format dengan pagination object yang berisi:
+  * page: nomor halaman saat ini
+  * limit: jumlah item per halaman
+  * total: total item keseluruhan
+  * totalPages: total halaman
+  * hasNext: boolean ada halaman selanjutnya
+  * hasPrev: boolean ada halaman sebelumnya
 
-## 🚀 Future AI Integration
+SQL Implementation:
+- Gunakan COUNT(*) query terpisah untuk total
+- OFFSET/LIMIT untuk pagination
+- ORDER BY dengan validation field yang diizinkan
+- Optimasi performa dengan proper indexing
 
-### Planned Enhancements
-1. **Automated Code Review**: GitHub Actions integration
-2. **Performance Monitoring**: AI-powered performance analysis
-3. **Security Scanning**: Automated vulnerability detection
-4. **Code Generation**: Template-based feature generation
-5. **Documentation Sync**: Auto-update docs from code changes
+Test semua edge cases termasuk parameter invalid.
+```
 
-### AI Tools Evaluation
-- **GitHub Copilot**: ⭐⭐⭐⭐⭐ (Excellent for code completion)
-- **ChatGPT/Claude**: ⭐⭐⭐⭐⭐ (Great for architecture planning)
-- **GitHub Copilot Chat**: ⭐⭐⭐⭐ (Good for real-time assistance)
+#### Soft Delete Feature
+```prompt
+Implementasikan soft delete untuk News dengan requirements:
+- Tambah kolom deleted_at TIMESTAMP NULL ke tabel news
+- DELETE endpoint default soft delete (update status='deleted' + deleted_at)
+- Hard delete dengan query parameter ?hard=true untuk permanent delete
+- Status transition logic:
+  * Ketika status berubah ke 'deleted' → set deleted_at = current_timestamp
+  * Ketika status berubah dari 'deleted' ke status lain → set deleted_at = NULL
+
+Business Rules:
+- Soft deleted news tetap tersimpan untuk audit trail
+- GET endpoints secara default tidak mengembalikan soft deleted data
+- Include deleted_at field di semua response news
+
+Testing:
+- Test soft delete via DELETE endpoint
+- Test status transition via PUT endpoint
+- Test hard delete functionality
+- Test response format consistency
+```
+
+#### API Documentation Enhancement
+```prompt
+Update OpenAPI/Swagger documentation untuk include:
+1. Pagination parameters di semua GET list endpoints:
+   - page (integer, min: 1, default: 1)
+   - limit (integer, min: 1, max: 100, default: 10)
+   - order_by (enum dengan field yang valid)
+   - sort_type (enum: ASC/DESC)
+
+2. Soft Delete documentation:
+   - deleted_at field di news response schema
+   - hard query parameter untuk DELETE endpoint
+   - Status transition behavior explanation
+
+3. Response schema update:
+   - Pagination object schema dengan semua field
+   - Error response format yang konsisten
+   - Example responses untuk setiap endpoint
+
+Pastikan dokumentasi accurate dan mudah dipahami oleh API consumers.
+```
+
+#### Comprehensive Testing Strategy
+```prompt
+Buat comprehensive test suite untuk pagination dan soft delete dengan coverage:
+
+Pagination Tests:
+- Response structure validation (data + pagination object)
+- Parameter validation (page, limit, order_by, sort_type)
+- Edge cases: page=0, limit=101, invalid order_by
+- Sorting functionality verification
+- Multiple pages navigation testing
+
+Soft Delete Tests:
+- Soft delete via DELETE endpoint
+- Hard delete dengan ?hard=true parameter
+- Status transition logic (PUT endpoint)
+- deleted_at field management
+- Data integrity setelah soft delete
+
+Integration Tests:
+- End-to-end workflow testing
+- Error scenarios dan edge cases
+- Performance testing untuk large datasets
+- Database cleanup setelah tests
+
+Mock realistic data dan test scenarios yang comprehensive.
+```
+
+### 4. Database & Performance
+
+#### Database Migration Scripts
+```prompt
+Buat migration scripts yang safe dan reversible untuk:
+1. Menambah kolom deleted_at ke tabel news
+2. Create indexes untuk performance optimization:
+   - Index pada news.status untuk filtering
+   - Index pada news.deleted_at untuk soft delete queries
+   - Composite index untuk pagination ordering
+
+Migration harus:
+- Idempotent (safe untuk dijalankan multiple kali)
+- Include rollback scripts
+- Handle existing data dengan grace
+- Minimize downtime untuk production
+
+Test migration di environment yang berbeda untuk memastikan compatibility.
+```
+
+#### Performance Optimization
+```prompt
+Optimasi performa untuk pagination dan filtering dengan:
+1. Database Indexing Strategy:
+   - Single column indexes untuk filtering
+   - Composite indexes untuk sorting + pagination
+   - Partial indexes untuk soft delete scenarios
+
+2. Query Optimization:
+   - Avoid SELECT * untuk large datasets
+   - Use EXPLAIN ANALYZE untuk query planning
+   - Implement query result caching strategy
+   - Optimize JOIN queries untuk news-topics relation
+
+3. Application Level:
+   - Connection pooling configuration
+   - Response caching untuk static data
+   - Lazy loading untuk related data
+   - Rate limiting untuk API protection
+
+Benchmark performance sebelum dan sesudah optimization.
+```
 
 ---
 

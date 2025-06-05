@@ -1,8 +1,7 @@
 import NewsController from '../controllers/newsController.js';
 
 // Schema untuk validasi dan dokumentasi Swagger
-const newsSchemas = {
-  // Schema untuk response berita
+const newsSchemas = {  // Schema untuk response berita
   newsResponse: {
     type: 'object',
     properties: {
@@ -25,6 +24,11 @@ const newsSchemas = {
           }
         },
         description: 'Daftar topics yang terkait dengan berita'
+      },      deleted_at: { 
+        type: 'string', 
+        format: 'date-time', 
+        nullable: true,
+        description: 'Waktu ketika berita dihapus (soft delete)' 
       },
       created_at: { type: 'string', format: 'date-time' },
       updated_at: { type: 'string', format: 'date-time' }
@@ -89,11 +93,10 @@ const newsSchemas = {
   }
 };
 
-async function newsRoutes(fastify, options) {
-  // GET /api/news - Mendapatkan semua berita dengan filter
+async function newsRoutes(fastify, options) {  // GET /api/news - Mendapatkan semua berita dengan filter
   fastify.get('/news', {
     schema: {
-      description: 'Mendapatkan semua berita dengan filter opsional',
+      description: 'Mendapatkan semua berita dengan filter opsional dan pagination',
       tags: ['News'],
       query: {
         type: 'object',
@@ -106,6 +109,31 @@ async function newsRoutes(fastify, options) {
           topic: { 
             type: 'string',
             description: 'Filter berdasarkan nama topic (pencarian partial)' 
+          },
+          page: {
+            type: 'integer',
+            minimum: 1,
+            default: 1,
+            description: 'Nomor halaman untuk pagination'
+          },
+          limit: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 100,
+            default: 10,
+            description: 'Jumlah item per halaman (maksimal 100)'
+          },
+          order_by: {
+            type: 'string',
+            enum: ['id', 'title', 'status', 'created_at', 'updated_at'],
+            default: 'created_at',
+            description: 'Field untuk sorting'
+          },
+          sort_type: {
+            type: 'string',
+            enum: ['ASC', 'DESC'],
+            default: 'DESC',
+            description: 'Tipe sorting (ASC atau DESC)'
           }
         }
       },
@@ -119,7 +147,17 @@ async function newsRoutes(fastify, options) {
               type: 'array',
               items: newsSchemas.newsResponse
             },
-            total: { type: 'integer' }
+            pagination: {
+              type: 'object',
+              properties: {
+                page: { type: 'integer', description: 'Halaman saat ini' },
+                limit: { type: 'integer', description: 'Jumlah item per halaman' },
+                total: { type: 'integer', description: 'Total jumlah item' },
+                totalPages: { type: 'integer', description: 'Total jumlah halaman' },
+                hasNext: { type: 'boolean', description: 'Apakah ada halaman selanjutnya' },
+                hasPrev: { type: 'boolean', description: 'Apakah ada halaman sebelumnya' }
+              }
+            }
           }
         }
       }

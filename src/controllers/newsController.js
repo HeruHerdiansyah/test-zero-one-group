@@ -1,22 +1,42 @@
 import NewsModel from '../models/newsModel.js';
 
-class NewsController {
-  // GET /api/news - Mendapatkan semua berita dengan filter opsional
+class NewsController {  // GET /api/news - Mendapatkan semua berita dengan filter opsional dan pagination
   static async getAllNews(request, reply) {
     try {
-      const { status, topic } = request.query;
+      const { status, topic, page, limit, order_by, sort_type } = request.query;
       
       const filters = {};
       if (status) filters.status = status;
       if (topic) filters.topic = topic;
       
-      const news = await NewsModel.getAll(filters);
+      const pagination = {
+        page: page ? parseInt(page) : 1,
+        limit: limit ? parseInt(limit) : 10,
+        order_by: order_by || 'created_at',
+        sort_type: sort_type || 'DESC'
+      };
+      
+      // Validasi pagination parameters
+      if (pagination.page < 1) {
+        return reply.code(400).send({
+          success: false,
+          message: 'Parameter page harus lebih besar dari 0'
+        });
+      }
+      
+      if (pagination.limit < 1 || pagination.limit > 100) {
+        return reply.code(400).send({
+          success: false,
+          message: 'Parameter limit harus antara 1-100'
+        });
+      }
+        const result = await NewsModel.getAll(filters, pagination);
       
       return reply.code(200).send({
         success: true,
         message: 'Berhasil mengambil data berita',
-        data: news,
-        total: news.length
+        data: result.data,
+        pagination: result.pagination
       });
     } catch (error) {
       request.log.error(error);

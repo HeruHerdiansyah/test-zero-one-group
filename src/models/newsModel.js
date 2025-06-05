@@ -1,7 +1,19 @@
 import { pool } from '../database/connection.js';
 
-class NewsModel {  // Mendapatkan semua berita dengan filter opsional
-  static async getAll(filters = {}) {
+class NewsModel {
+  // Mendapatkan semua berita dengan filter opsional dan pagination
+  static async getAll(filters = {}, pagination = {}) {
+    // Default pagination parameters
+    const page = parseInt(pagination.page) || 1;
+    const limit = parseInt(pagination.limit) || 10;
+    const orderBy = pagination.order_by || 'created_at';
+    const sortType = pagination.sort_type?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+    const offset = (page - 1) * limit;
+
+    // Validate order_by parameter to prevent SQL injection
+    const allowedOrderFields = ['id', 'title', 'status', 'created_at', 'updated_at'];
+    const safeOrderBy = allowedOrderFields.includes(orderBy) ? orderBy : 'created_at';
+
     let query = `
       SELECT n.*, 
              COALESCE(
@@ -37,12 +49,60 @@ class NewsModel {  // Mendapatkan semua berita dengan filter opsional
       query += ' WHERE ' + conditions.join(' AND ');
     }
     
-    query += ' GROUP BY n.id, n.title, n.content, n.status, n.created_at, n.updated_at ORDER BY n.created_at DESC';
+    query += ` GROUP BY n.id, n.title, n.content, n.status, n.deleted_at, n.created_at, n.updated_at 
+               ORDER BY n.${safeOrderBy} ${sortType} 
+               LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
     
-    const result = await pool.query(query, values);
-    return result.rows;
-  }
-    // Mendapatkan berita berdasarkan ID
+    values.push(limit, offset);
+    
+    // Get total count for pagination
+    let countQuery = `
+      SELECT COUNT(DISTINCT n.id) as total
+      FROM news n
+      LEFT JOIN news_topics nt ON n.id = nt.news_id
+      LEFT JOIN topics t ON nt.topic_id = t.id
+    `;
+    
+    const countConditions = [];
+    const countValues = [];
+    let countParamCount = 1;
+    
+    if (filters.status) {
+      countConditions.push(`n.status = $${countParamCount}`);
+      countValues.push(filters.status);
+      countParamCount++;
+    }
+    
+    if (filters.topic) {
+      countConditions.push(`t.name ILIKE $${countParamCount}`);
+      countValues.push(`%${filters.topic}%`);
+      countParamCount++;
+    }
+    
+    if (countConditions.length > 0) {
+      countQuery += ' WHERE ' + countConditions.join(' AND ');
+    }
+    
+    const [dataResult, countResult] = await Promise.all([
+      pool.query(query, values),
+      pool.query(countQuery, countValues)
+    ]);
+    
+    const total = parseInt(countResult.rows[0].total);
+    const totalPages = Math.ceil(total / limit);
+    
+    return {
+      data: dataResult.rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    };
+  }    // Mendapatkan berita berdasarkan ID
   static async getById(id) {
     const query = `
       SELECT n.*, 
@@ -56,7 +116,7 @@ class NewsModel {  // Mendapatkan semua berita dengan filter opsional
       LEFT JOIN news_topics nt ON n.id = nt.news_id
       LEFT JOIN topics t ON nt.topic_id = t.id
       WHERE n.id = $1
-      GROUP BY n.id, n.title, n.content, n.status, n.created_at, n.updated_at
+      GROUP BY n.id, n.title, n.content, n.status, n.deleted_at, n.created_at, n.updated_at
     `;
     
     const result = await pool.query(query, [id]);
@@ -105,8 +165,7 @@ class NewsModel {  // Mendapatkan semua berita dengan filter opsional
       client.release();
     }
   }
-  
-  // Update berita
+    // Update berita
   static async update(id, newsData) {
     const client = await pool.connect();
     
@@ -129,11 +188,22 @@ class NewsModel {  // Mendapatkan semua berita dengan filter opsional
         values.push(newsData.content);
         paramCount++;
       }
-      
-      if (newsData.status) {
+        if (newsData.status) {
         updateFields.push(`status = $${paramCount}`);
         values.push(newsData.status);
         paramCount++;
+        
+        // Handle soft delete logic
+        if (newsData.status === 'deleted') {
+          updateFields.push(`deleted_at = $${paramCount}`);
+          values.push(new Date());
+          paramCount++;
+        } else {
+          // If status changed from deleted to something else, clear deleted_at
+          updateFields.push(`deleted_at = $${paramCount}`);
+          values.push(null);
+          paramCount++;
+        }
       }
       
       if (updateFields.length === 0) {
@@ -176,10 +246,10 @@ class NewsModel {  // Mendapatkan semua berita dengan filter opsional
     }
   }
   
-  // Hapus berita (soft delete dengan mengubah status)
+  // Hapus berita (soft delete dengan mengubah status dan set deleted_at)
   static async delete(id) {
-    const query = 'UPDATE news SET status = $1 WHERE id = $2 RETURNING *';
-    const result = await pool.query(query, ['deleted', id]);
+    const query = 'UPDATE news SET status = $1, deleted_at = $2 WHERE id = $3 RETURNING *';
+    const result = await pool.query(query, ['deleted', new Date(), id]);
     
     if (result.rows.length === 0) {
       throw new Error('Berita tidak ditemukan');

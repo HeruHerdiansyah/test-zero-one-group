@@ -1,7 +1,19 @@
 import { pool } from '../database/connection.js';
 
-class TopicModel {  // Mendapatkan semua topics dengan optional search
-  static async getAll(searchQuery = null) {
+class TopicModel {
+  // Mendapatkan semua topics dengan optional search dan pagination
+  static async getAll(searchQuery = null, pagination = {}) {
+    // Default pagination parameters
+    const page = parseInt(pagination.page) || 1;
+    const limit = parseInt(pagination.limit) || 10;
+    const orderBy = pagination.order_by || 'name';
+    const sortType = pagination.sort_type?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+    const offset = (page - 1) * limit;
+
+    // Validate order_by parameter to prevent SQL injection
+    const allowedOrderFields = ['id', 'name', 'created_at', 'updated_at', 'news_count'];
+    const safeOrderBy = allowedOrderFields.includes(orderBy) ? orderBy : 'name';
+
     let query = `
       SELECT t.*, 
              COUNT(nt.news_id) as news_count
@@ -11,18 +23,53 @@ class TopicModel {  // Mendapatkan semua topics dengan optional search
     `;
     
     const params = [];
+    let paramCount = 1;
+    
     if (searchQuery) {
-      query += ` WHERE t.name ILIKE $1`;
+      query += ` WHERE t.name ILIKE $${paramCount}`;
       params.push(`%${searchQuery}%`);
+      paramCount++;
     }
     
     query += `
       GROUP BY t.id, t.name, t.description, t.created_at, t.updated_at
-      ORDER BY t.name ASC
+      ORDER BY ${safeOrderBy === 'news_count' ? 'COUNT(nt.news_id)' : `t.${safeOrderBy}`} ${sortType}
+      LIMIT $${paramCount} OFFSET $${paramCount + 1}
     `;
     
-    const result = await pool.query(query, params);
-    return result.rows;
+    params.push(limit, offset);
+    
+    // Get total count for pagination
+    let countQuery = `
+      SELECT COUNT(DISTINCT t.id) as total
+      FROM topics t
+    `;
+    
+    const countParams = [];
+    if (searchQuery) {
+      countQuery += ` WHERE t.name ILIKE $1`;
+      countParams.push(`%${searchQuery}%`);
+    }
+    
+    const [dataResult, countResult] = await Promise.all([
+      pool.query(query, params),
+      pool.query(countQuery, countParams)
+    ]);
+    
+    const total = parseInt(countResult.rows[0].total);
+    const totalPages = Math.ceil(total / limit);
+    
+    return {
+      data: dataResult.rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    };
   }
     // Mendapatkan topic berdasarkan ID
   static async getById(id) {

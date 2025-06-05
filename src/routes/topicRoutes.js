@@ -64,10 +64,10 @@ const topicSchemas = {
   }
 };
 
-async function topicRoutes(fastify, options) {  // GET /api/topics - Mendapatkan semua topics dengan optional search
+async function topicRoutes(fastify, options) {  // GET /api/topics - Mendapatkan semua topics dengan optional search dan pagination
   fastify.get('/topics', {
     schema: {
-      description: 'Mendapatkan semua topics dengan jumlah berita terkait, dengan opsi pencarian',
+      description: 'Mendapatkan semua topics dengan jumlah berita terkait, dengan opsi pencarian dan pagination',
       tags: ['Topics'],
       query: {
         type: 'object',
@@ -75,6 +75,31 @@ async function topicRoutes(fastify, options) {  // GET /api/topics - Mendapatkan
           q: { 
             type: 'string',
             description: 'Query pencarian untuk nama topic (opsional)' 
+          },
+          page: {
+            type: 'integer',
+            minimum: 1,
+            default: 1,
+            description: 'Nomor halaman untuk pagination'
+          },
+          limit: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 100,
+            default: 10,
+            description: 'Jumlah item per halaman (maksimal 100)'
+          },
+          order_by: {
+            type: 'string',
+            enum: ['id', 'name', 'created_at', 'updated_at', 'news_count'],
+            default: 'name',
+            description: 'Field untuk sorting'
+          },
+          sort_type: {
+            type: 'string',
+            enum: ['ASC', 'DESC'],
+            default: 'DESC',
+            description: 'Tipe sorting (ASC atau DESC)'
           }
         }
       },
@@ -88,12 +113,22 @@ async function topicRoutes(fastify, options) {  // GET /api/topics - Mendapatkan
               type: 'array',
               items: topicSchemas.topicResponse
             },
-            total: { type: 'integer' }
+            pagination: {
+              type: 'object',
+              properties: {
+                page: { type: 'integer', description: 'Halaman saat ini' },
+                limit: { type: 'integer', description: 'Jumlah item per halaman' },
+                total: { type: 'integer', description: 'Total jumlah item' },
+                totalPages: { type: 'integer', description: 'Total jumlah halaman' },
+                hasNext: { type: 'boolean', description: 'Apakah ada halaman selanjutnya' },
+                hasPrev: { type: 'boolean', description: 'Apakah ada halaman sebelumnya' }
+              }
+            }
           }
         }
       }
     }
-  }, TopicController.getAllTopics);  
+  }, TopicController.getAllTopics);
   // GET /api/topics/:id - Mendapatkan topic berdasarkan ID
   fastify.get('/topics/:id', {
     schema: {

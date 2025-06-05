@@ -2,6 +2,8 @@
 
 REST API untuk manajemen berita dan topik menggunakan **Fastify** dan **PostgreSQL**. API ini dikembangkan sebagai bagian dari test backend Zero One Group dengan implementasi penuh fitur CRUD, dokumentasi Swagger, unit testing, dan CI/CD pipeline.
 
+**🔗 GitHub Repository**: https://github.com/HeruHerdiansyah/test-zero-one-group
+
 ## 🚀 Tech Stack
 
 - **Backend Framework**: Node.js dengan Fastify
@@ -40,7 +42,7 @@ REST API untuk manajemen berita dan topik menggunakan **Fastify** dan **PostgreS
 
 1. **Clone repository**
 ```bash
-git clone <repository-url>
+git clone https://github.com/HeruHerdiansyah/test-zero-one-group.git
 cd test-zero-one-group
 ```
 
@@ -149,6 +151,7 @@ Table news {
   title varchar(255) [not null]
   content text [not null]
   status varchar(20) [not null, default: 'draft']
+  deleted_at timestamp [null]
   created_at timestamp [default: now()]
   updated_at timestamp [default: now()]
 }
@@ -170,7 +173,7 @@ Table news_topics {
 
 ### 1. Clone Repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/HeruHerdiansyah/test-zero-one-group.git
 cd test-zero-one-group
 ```
 
@@ -232,7 +235,7 @@ Setelah server berjalan, akses dokumentasi API di:
 
 #### News Endpoints
 ```http
-GET    /api/news              # Mendapatkan semua berita dengan filter
+GET    /api/news              # Mendapatkan semua berita dengan filter dan pagination
 GET    /api/news/:id          # Mendapatkan berita berdasarkan ID
 POST   /api/news              # Membuat berita baru
 PUT    /api/news/:id          # Update berita
@@ -242,7 +245,7 @@ DELETE /api/news/:id?hard=true # Hard delete berita
 
 #### Topics Endpoints
 ```http
-GET    /api/topics            # Mendapatkan semua topics (dengan optional search: ?q=keyword)
+GET    /api/topics            # Mendapatkan semua topics dengan search dan pagination
 GET    /api/topics/:id        # Mendapatkan topic berdasarkan ID
 POST   /api/topics            # Membuat topic baru
 PUT    /api/topics/:id        # Update topic
@@ -260,8 +263,8 @@ DELETE /api/topics/:id        # Hapus topic
 
 **Contoh:**
 ```http
-GET /api/news?status=published&topic=teknologi
-GET /api/topics?q=javascript
+GET /api/news?status=published&topic=teknologi&page=1&limit=5&order_by=created_at&sort_type=DESC
+GET /api/topics?q=javascript&page=2&limit=10&order_by=name&sort_type=ASC
 ```
 ```
 
@@ -325,7 +328,6 @@ Untuk melihat status pipeline:
 ├── tests/                     # Test files
 │   ├── helper.js              # Test utilities
 │   ├── setup.js               # Test setup
-│   ├── hooks.js               # Test hooks
 │   ├── news.test.js           # News API tests
 │   └── topics.test.js         # Topics API tests
 ├── docs/                      # Documentation files
