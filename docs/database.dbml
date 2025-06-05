@@ -1,0 +1,41 @@
+// ERD untuk News dan Topic Management API
+// Menggunakan DBML (Database Markup Language)
+
+Table topics {
+  id integer [primary key, increment, note: 'ID unik untuk topik']
+  name varchar(100) [not null, unique, note: 'Nama topik']
+  description text [note: 'Deskripsi topik']
+  created_at timestamp [default: `now()`, note: 'Tanggal pembuatan']
+  updated_at timestamp [default: `now()`, note: 'Tanggal terakhir diupdate']
+}
+
+Table news {
+  id integer [primary key, increment, note: 'ID unik untuk berita']
+  title varchar(255) [not null, note: 'Judul berita']
+  content text [not null, note: 'Konten berita']
+  status varchar(20) [not null, default: 'draft', note: 'Status: draft, published, deleted']
+  created_at timestamp [default: `now()`, note: 'Tanggal pembuatan']
+  updated_at timestamp [default: `now()`, note: 'Tanggal terakhir diupdate']
+  
+  indexes {
+    status [name: 'idx_news_status']
+  }
+}
+
+Table news_topics {
+  id integer [primary key, increment, note: 'ID unik untuk relasi']
+  news_id integer [not null, ref: > news.id, note: 'Foreign key ke tabel news']
+  topic_id integer [not null, ref: > topics.id, note: 'Foreign key ke tabel topics']
+  created_at timestamp [default: `now()`, note: 'Tanggal pembuatan']
+  
+  indexes {
+    news_id [name: 'idx_news_topics_news_id']
+    topic_id [name: 'idx_news_topics_topic_id']
+    (news_id, topic_id) [unique, name: 'idx_news_topics_unique']
+  }
+}
+
+// Keterangan relasi:
+// - Satu berita dapat memiliki banyak topik (many-to-many)
+// - Satu topik dapat dimiliki oleh banyak berita (many-to-many)
+// - Menggunakan tabel junction news_topics untuk relasi many-to-many

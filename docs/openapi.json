@@ -1,0 +1,1063 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "News & Topics Management API",
+    "description": "REST API untuk manajemen berita dan topik menggunakan Fastify dan PostgreSQL",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Zero One Group Test",
+      "email": "developer@example.com"
+    }
+  },
+  "definitions": {},
+  "paths": {
+    "/api/news": {
+      "get": {
+        "description": "Mendapatkan semua berita dengan filter opsional",
+        "tags": [
+          "News"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "deleted"
+            ],
+            "description": "Filter berdasarkan status",
+            "required": false,
+            "in": "query",
+            "name": "status"
+          },
+          {
+            "type": "string",
+            "description": "Filter berdasarkan nama topic (pencarian partial)",
+            "required": false,
+            "in": "query",
+            "name": "topic"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "description": "ID unik berita"
+                      },
+                      "title": {
+                        "type": "string",
+                        "description": "Judul berita"
+                      },
+                      "content": {
+                        "type": "string",
+                        "description": "Konten berita"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "draft",
+                          "published",
+                          "deleted"
+                        ],
+                        "description": "Status berita"
+                      },
+                      "topics": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "description": "Daftar topics yang terkait dengan berita"
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                },
+                "total": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "description": "Membuat berita baru",
+        "tags": [
+          "News"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "required": [
+                "title",
+                "content"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 255,
+                  "description": "Judul berita"
+                },
+                "content": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Konten berita"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "draft",
+                    "published",
+                    "deleted"
+                  ],
+                  "description": "Status berita (default: draft)"
+                },
+                "topic_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "description": "Array ID topics yang terkait"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "description": "ID unik berita"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Judul berita"
+                    },
+                    "content": {
+                      "type": "string",
+                      "description": "Konten berita"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "published",
+                        "deleted"
+                      ],
+                      "description": "Status berita"
+                    },
+                    "topics": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "description": "Daftar topics yang terkait dengan berita"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/news/{id}": {
+      "get": {
+        "description": "Mendapatkan berita berdasarkan ID",
+        "tags": [
+          "News"
+        ],
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "ID berita",
+            "required": true,
+            "in": "path",
+            "name": "id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "description": "ID unik berita"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Judul berita"
+                    },
+                    "content": {
+                      "type": "string",
+                      "description": "Konten berita"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "published",
+                        "deleted"
+                      ],
+                      "description": "Status berita"
+                    },
+                    "topics": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "description": "Daftar topics yang terkait dengan berita"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "description": "Update berita berdasarkan ID",
+        "tags": [
+          "News"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 255,
+                  "description": "Judul berita"
+                },
+                "content": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Konten berita"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "draft",
+                    "published",
+                    "deleted"
+                  ],
+                  "description": "Status berita"
+                },
+                "topic_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "description": "Array ID topics yang terkait"
+                }
+              }
+            }
+          },
+          {
+            "type": "integer",
+            "description": "ID berita",
+            "required": true,
+            "in": "path",
+            "name": "id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "description": "ID unik berita"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Judul berita"
+                    },
+                    "content": {
+                      "type": "string",
+                      "description": "Konten berita"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "published",
+                        "deleted"
+                      ],
+                      "description": "Status berita"
+                    },
+                    "topics": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "description": "Daftar topics yang terkait dengan berita"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "description": "Hapus berita (soft delete kecuali menggunakan query ?hard=true)",
+        "tags": [
+          "News"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "enum": [
+              "true",
+              "false"
+            ],
+            "description": "Hard delete jika bernilai true",
+            "required": false,
+            "in": "query",
+            "name": "hard"
+          },
+          {
+            "type": "integer",
+            "description": "ID berita",
+            "required": true,
+            "in": "path",
+            "name": "id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "description": "ID unik berita"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Judul berita"
+                    },
+                    "content": {
+                      "type": "string",
+                      "description": "Konten berita"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "published",
+                        "deleted"
+                      ],
+                      "description": "Status berita"
+                    },
+                    "topics": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "description": "Daftar topics yang terkait dengan berita"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/topics": {
+      "get": {
+        "description": "Mendapatkan semua topics dengan jumlah berita terkait, dengan opsi pencarian",
+        "tags": [
+          "Topics"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Query pencarian untuk nama topic (opsional)",
+            "required": false,
+            "in": "query",
+            "name": "q"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "description": "ID unik topic"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Nama topic"
+                      },
+                      "description": {
+                        "type": "string",
+                        "description": "Deskripsi topic"
+                      },
+                      "news_count": {
+                        "type": "integer",
+                        "description": "Jumlah berita yang terkait"
+                      },
+                      "news": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        },
+                        "description": "Daftar berita yang terkait (hanya untuk detail topic)"
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                },
+                "total": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "description": "Membuat topic baru",
+        "tags": [
+          "Topics"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "description": "Nama topic (harus unik)"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Deskripsi topic (opsional)"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "description": "ID unik topic"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Nama topic"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Deskripsi topic"
+                    },
+                    "news_count": {
+                      "type": "integer",
+                      "description": "Jumlah berita yang terkait"
+                    },
+                    "news": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      },
+                      "description": "Daftar berita yang terkait (hanya untuk detail topic)"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/topics/{id}": {
+      "get": {
+        "description": "Mendapatkan topic berdasarkan ID dengan daftar berita terkait",
+        "tags": [
+          "Topics"
+        ],
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "ID topic",
+            "required": true,
+            "in": "path",
+            "name": "id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "description": "ID unik topic"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Nama topic"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Deskripsi topic"
+                    },
+                    "news_count": {
+                      "type": "integer",
+                      "description": "Jumlah berita yang terkait"
+                    },
+                    "news": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      },
+                      "description": "Daftar berita yang terkait (hanya untuk detail topic)"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "description": "Update topic berdasarkan ID",
+        "tags": [
+          "Topics"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "description": "Nama topic (harus unik)"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Deskripsi topic"
+                }
+              }
+            }
+          },
+          {
+            "type": "integer",
+            "description": "ID topic",
+            "required": true,
+            "in": "path",
+            "name": "id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "description": "ID unik topic"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Nama topic"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Deskripsi topic"
+                    },
+                    "news_count": {
+                      "type": "integer",
+                      "description": "Jumlah berita yang terkait"
+                    },
+                    "news": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      },
+                      "description": "Daftar berita yang terkait (hanya untuk detail topic)"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "description": "Hapus topic (tidak bisa dihapus jika masih digunakan oleh berita)",
+        "tags": [
+          "Topics"
+        ],
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "ID topic",
+            "required": true,
+            "in": "path",
+            "name": "id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "description": "ID unik topic"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Nama topic"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Deskripsi topic"
+                    },
+                    "news_count": {
+                      "type": "integer",
+                      "description": "Jumlah berita yang terkait"
+                    },
+                    "news": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      },
+                      "description": "Daftar berita yang terkait (hanya untuk detail topic)"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "host": "localhost:3000",
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "tags": [
+    {
+      "name": "News",
+      "description": "Operasi CRUD untuk manajemen berita"
+    },
+    {
+      "name": "Topics",
+      "description": "Operasi CRUD untuk manajemen topik"
+    }
+  ]
+}
