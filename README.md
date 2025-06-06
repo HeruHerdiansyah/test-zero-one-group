@@ -236,6 +236,7 @@ Setelah server berjalan, akses dokumentasi API di:
 #### News Endpoints
 ```http
 GET    /api/news              # Mendapatkan semua berita dengan filter dan pagination
+GET    /api/news/topics       # Mendapatkan daftar topics untuk dropdown
 GET    /api/news/:id          # Mendapatkan berita berdasarkan ID
 POST   /api/news              # Membuat berita baru
 PUT    /api/news/:id          # Update berita
@@ -256,14 +257,17 @@ DELETE /api/topics/:id        # Hapus topic
 
 #### News Filters
 - `status`: Filter berdasarkan status (draft, published, deleted)
-- `topic`: Filter berdasarkan nama topic (partial match)
+- `topic_id`: Filter berdasarkan ID topic (exact match, integer)
+- `q`: Pencarian berdasarkan judul berita (partial match, case-insensitive)
 
 #### Topics Filters
 - `q`: Pencarian berdasarkan nama topic (partial match)
 
 **Contoh:**
 ```http
-GET /api/news?status=published&topic=teknologi&page=1&limit=5&order_by=created_at&sort_type=DESC
+GET /api/news?status=published&topic_id=1&page=1&limit=5&order_by=created_at&sort_type=DESC
+GET /api/news?q=AI&topic_id=1                    # Kombinasi search dan filter topic
+GET /api/news/topics                             # Daftar topics untuk dropdown
 GET /api/topics?q=javascript&page=2&limit=10&order_by=name&sort_type=ASC
 ```
 ```

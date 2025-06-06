@@ -11,6 +11,44 @@
   },
   "definitions": {},
   "paths": {
+    "/api/news/topics": {
+      "get": {
+        "description": "Mendapatkan daftar topics untuk dropdown",
+        "tags": [
+          "News"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/news": {
       "get": {
         "description": "Mendapatkan semua berita dengan filter opsional dan pagination",
@@ -31,11 +69,18 @@
             "name": "status"
           },
           {
-            "type": "string",
-            "description": "Filter berdasarkan nama topic (pencarian partial)",
+            "type": "integer",
+            "description": "Filter berdasarkan ID topic",
             "required": false,
             "in": "query",
-            "name": "topic"
+            "name": "topic_id"
+          },
+          {
+            "type": "string",
+            "description": "Pencarian berdasarkan judul berita",
+            "required": false,
+            "in": "query",
+            "name": "q"
           },
           {
             "type": "integer",

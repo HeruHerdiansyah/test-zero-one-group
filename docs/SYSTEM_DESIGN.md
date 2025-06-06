@@ -145,21 +145,35 @@ flowchart TD
     ParseQuery --> CheckStatus{Status filter exists?}
     
     CheckStatus -->|Yes| AddStatusFilter[Add status = ?]
-    CheckStatus -->|No| CheckTopic{Topic filter exists?}
+    CheckStatus -->|No| CheckTopicID{topic_id filter exists?}
     
-    AddStatusFilter --> CheckTopic
-    CheckTopic -->|Yes| AddTopicFilter[Add topic ILIKE %?%]
-    CheckTopic -->|No| BuildQuery[Build Final Query]
+    AddStatusFilter --> CheckTopicID
+    CheckTopicID -->|Yes| AddTopicIDFilter[Add subquery: WHERE n.id IN<br/>SELECT news_id FROM news_topics<br/>WHERE topic_id = ?]
+    CheckTopicID -->|No| CheckSearch{Search query 'q' exists?}
     
-    AddTopicFilter --> BuildQuery
+    AddTopicIDFilter --> CheckSearch
+    CheckSearch -->|Yes| AddSearchFilter[Add title ILIKE %?%]
+    CheckSearch -->|No| BuildQuery[Build Final Query with JOINs]
+    
+    AddSearchFilter --> BuildQuery
     BuildQuery --> ExecuteQuery[Execute SQL Query]
-    ExecuteQuery --> FormatResponse[Format Response with Topics]
-    FormatResponse --> End([Return JSON Response])
+    ExecuteQuery --> FormatResponse[Format Response with ALL Topics<br/>for each News Item]
+    FormatResponse --> CheckMessage{Determine Response Message}
+    
+    CheckMessage --> HasSearch{Has search query?}
+    HasSearch -->|Yes| SearchMessage[Message: Berhasil mencari berita<br/>dengan kata kunci 'query']
+    HasSearch -->|No| DefaultMessage[Message: Berhasil mengambil data berita]
+    
+    SearchMessage --> End([Return JSON Response])
+    DefaultMessage --> End
     
     style Start fill:#e3f2fd
     style End fill:#e8f5e8
     style CheckStatus fill:#fff3e0
-    style CheckTopic fill:#fff3e0
+    style CheckTopicID fill:#fff3e0
+    style CheckSearch fill:#fff3e0
+    style AddTopicIDFilter fill:#f3e5f5
+    style FormatResponse fill:#e8f5e8
 ```
 
 ## 🧪 Testing Architecture

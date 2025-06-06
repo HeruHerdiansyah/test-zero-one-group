@@ -420,4 +420,144 @@ describe('News API Tests', () => {
       expect(body.success).toBe(false);
     });
   });
+
+  describe('GET /api/news/topics', () => {
+    it('harus mengembalikan list topics untuk dropdown', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/news/topics'
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.success).toBe(true);
+      expect(body.message).toBe('Berhasil mengambil daftar topics');
+      expect(Array.isArray(body.data)).toBe(true);
+      
+      // Verify data structure
+      if (body.data.length > 0) {
+        expect(body.data[0]).toHaveProperty('id');
+        expect(body.data[0]).toHaveProperty('name');
+        expect(typeof body.data[0].id).toBe('number');
+        expect(typeof body.data[0].name).toBe('string');
+      }
+    });
+  });
+
+  describe('GET /api/news with new filters', () => {
+    let testTopicId;
+    let testNewsId;
+
+    beforeAll(async () => {
+      // Create test topic
+      const topicResponse = await app.inject({
+        method: 'POST',
+        url: '/api/topics',
+        payload: {
+          name: 'Test Topic Filter',
+          description: 'Topic untuk testing filter'
+        }
+      });
+      const topicBody = JSON.parse(topicResponse.body);
+      testTopicId = topicBody.data.id;
+      createdTopics.push(topicBody.data);
+
+      // Create test news with the topic
+      const newsResponse = await app.inject({
+        method: 'POST',
+        url: '/api/news',
+        payload: {
+          title: 'Test News Filter Title',
+          content: 'Content untuk testing filter berdasarkan topic dan title',
+          status: 'published',
+          topic_ids: [testTopicId]
+        }
+      });
+      const newsBody = JSON.parse(newsResponse.body);
+      testNewsId = newsBody.data.id;
+      createdNews.push(newsBody.data);
+    });
+
+    it('harus bisa filter berdasarkan topic_id', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/news?topic_id=${testTopicId}`
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.success).toBe(true);
+      expect(Array.isArray(body.data)).toBe(true);
+      
+      // Verify that returned news has the specified topic
+      const foundNews = body.data.find(news => news.id === testNewsId);
+      expect(foundNews).toBeDefined();
+      expect(foundNews.topics.some(topic => topic.id === testTopicId)).toBe(true);
+    });
+
+    it('harus bisa search berdasarkan title', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/news?q=Test News Filter'
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.success).toBe(true);
+      expect(body.message).toContain('Berhasil mencari berita dengan kata kunci');
+      expect(Array.isArray(body.data)).toBe(true);
+      
+      // Verify that returned news contains the search term
+      const foundNews = body.data.find(news => news.id === testNewsId);
+      expect(foundNews).toBeDefined();
+      expect(foundNews.title.toLowerCase()).toContain('test news filter');
+    });
+
+    it('harus bisa kombinasi filter topic_id dan search title', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/news?topic_id=${testTopicId}&q=Filter`
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.success).toBe(true);
+      expect(body.message).toContain('Berhasil mencari berita dengan kata kunci');
+      expect(Array.isArray(body.data)).toBe(true);
+      
+      // Verify that returned news matches both criteria
+      const foundNews = body.data.find(news => news.id === testNewsId);
+      expect(foundNews).toBeDefined();
+      expect(foundNews.title.toLowerCase()).toContain('filter');
+      expect(foundNews.topics.some(topic => topic.id === testTopicId)).toBe(true);
+    });
+
+    it('harus mengembalikan array kosong jika tidak ada hasil search', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/news?q=NonExistentSearchTerm12345'
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.success).toBe(true);
+      expect(body.message).toContain('Berhasil mencari berita dengan kata kunci');
+      expect(Array.isArray(body.data)).toBe(true);
+      expect(body.data.length).toBe(0);
+      expect(body.pagination.total).toBe(0);
+    });
+
+    it('harus mengembalikan array kosong jika topic_id tidak ada', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/news?topic_id=99999'
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.success).toBe(true);
+      expect(Array.isArray(body.data)).toBe(true);
+      expect(body.data.length).toBe(0);
+    });
+  });
 });

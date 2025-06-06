@@ -1,7 +1,6 @@
 import { pool } from '../database/connection.js';
 
-class NewsModel {
-  // Mendapatkan semua berita dengan filter opsional dan pagination
+class NewsModel {  // Mendapatkan semua berita dengan filter opsional dan pagination
   static async getAll(filters = {}, pagination = {}) {
     // Default pagination parameters
     const page = parseInt(pagination.page) || 1;
@@ -14,6 +13,41 @@ class NewsModel {
     const allowedOrderFields = ['id', 'title', 'status', 'created_at', 'updated_at'];
     const safeOrderBy = allowedOrderFields.includes(orderBy) ? orderBy : 'created_at';
 
+    // Build base query to find filtered news IDs first
+    let newsFilterQuery = `SELECT DISTINCT n.id FROM news n`;
+    const newsFilterConditions = [];
+    const newsFilterValues = [];
+    let newsFilterParamCount = 1;
+
+    // Add JOINs only when needed for filtering
+    if (filters.topic_id) {
+      newsFilterQuery += ` INNER JOIN news_topics nt ON n.id = nt.news_id`;
+    }
+
+    // Build WHERE conditions for news filtering
+    if (filters.status) {
+      newsFilterConditions.push(`n.status = $${newsFilterParamCount}`);
+      newsFilterValues.push(filters.status);
+      newsFilterParamCount++;
+    }
+
+    if (filters.topic_id) {
+      newsFilterConditions.push(`nt.topic_id = $${newsFilterParamCount}`);
+      newsFilterValues.push(parseInt(filters.topic_id));
+      newsFilterParamCount++;
+    }
+
+    if (filters.title_search) {
+      newsFilterConditions.push(`n.title ILIKE $${newsFilterParamCount}`);
+      newsFilterValues.push(`%${filters.title_search}%`);
+      newsFilterParamCount++;
+    }
+
+    if (newsFilterConditions.length > 0) {
+      newsFilterQuery += ' WHERE ' + newsFilterConditions.join(' AND ');
+    }
+
+    // Main query to get news with ALL their topics
     let query = `
       SELECT n.*, 
              COALESCE(
@@ -25,72 +59,35 @@ class NewsModel {
       FROM news n
       LEFT JOIN news_topics nt ON n.id = nt.news_id
       LEFT JOIN topics t ON nt.topic_id = t.id
+      WHERE n.id IN (${newsFilterQuery})
+      GROUP BY n.id, n.title, n.content, n.status, n.deleted_at, n.created_at, n.updated_at 
+      ORDER BY n.${safeOrderBy} ${sortType} 
+      LIMIT $${newsFilterParamCount} OFFSET $${newsFilterParamCount + 1}
     `;
     
-    const conditions = [];
-    const values = [];
-    let paramCount = 1;
+    const values = [...newsFilterValues, limit, offset];
     
-    // Filter berdasarkan status
-    if (filters.status) {
-      conditions.push(`n.status = $${paramCount}`);
-      values.push(filters.status);
-      paramCount++;
-    }
-    
-    // Filter berdasarkan topic
-    if (filters.topic) {
-      conditions.push(`t.name ILIKE $${paramCount}`);
-      values.push(`%${filters.topic}%`);
-      paramCount++;
-    }
-    
-    if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ');
-    }
-    
-    query += ` GROUP BY n.id, n.title, n.content, n.status, n.deleted_at, n.created_at, n.updated_at 
-               ORDER BY n.${safeOrderBy} ${sortType} 
-               LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
-    
-    values.push(limit, offset);
-    
-    // Get total count for pagination
+    // Get total count for pagination using the same filter logic
     let countQuery = `
       SELECT COUNT(DISTINCT n.id) as total
       FROM news n
-      LEFT JOIN news_topics nt ON n.id = nt.news_id
-      LEFT JOIN topics t ON nt.topic_id = t.id
     `;
     
-    const countConditions = [];
-    const countValues = [];
-    let countParamCount = 1;
-    
-    if (filters.status) {
-      countConditions.push(`n.status = $${countParamCount}`);
-      countValues.push(filters.status);
-      countParamCount++;
+    if (filters.topic_id) {
+      countQuery += ` INNER JOIN news_topics nt ON n.id = nt.news_id`;
     }
     
-    if (filters.topic) {
-      countConditions.push(`t.name ILIKE $${countParamCount}`);
-      countValues.push(`%${filters.topic}%`);
-      countParamCount++;
-    }
-    
-    if (countConditions.length > 0) {
-      countQuery += ' WHERE ' + countConditions.join(' AND ');
-    }
-    
+    if (newsFilterConditions.length > 0) {
+      countQuery += ' WHERE ' + newsFilterConditions.join(' AND ');
+    }    
     const [dataResult, countResult] = await Promise.all([
       pool.query(query, values),
-      pool.query(countQuery, countValues)
+      pool.query(countQuery, newsFilterValues)
     ]);
     
     const total = parseInt(countResult.rows[0].total);
     const totalPages = Math.ceil(total / limit);
-    
+
     return {
       data: dataResult.rows,
       pagination: {
@@ -102,7 +99,7 @@ class NewsModel {
         hasPrev: page > 1
       }
     };
-  }    // Mendapatkan berita berdasarkan ID
+  }// Mendapatkan berita berdasarkan ID
   static async getById(id) {
     const query = `
       SELECT n.*, 

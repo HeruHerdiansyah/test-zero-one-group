@@ -1,13 +1,42 @@
 import NewsModel from '../models/newsModel.js';
+import TopicModel from '../models/topicModel.js';
 
-class NewsController {  // GET /api/news - Mendapatkan semua berita dengan filter opsional dan pagination
+class NewsController {
+  // GET /api/news/topics - Mendapatkan daftar topics untuk dropdown
+  static async getTopicsForDropdown(request, reply) {
+    try {
+      // Ambil semua topics tanpa pagination untuk dropdown
+      const result = await TopicModel.getAll(null, { limit: 1000 });
+      
+      // Format data untuk dropdown (id dan name saja)
+      const topics = result.data.map(topic => ({
+        id: topic.id,
+        name: topic.name
+      }));
+      
+      return reply.code(200).send({
+        success: true,
+        message: 'Berhasil mengambil daftar topics',
+        data: topics
+      });
+    } catch (error) {
+      request.log.error(error);
+      return reply.code(500).send({
+        success: false,
+        message: 'Terjadi kesalahan saat mengambil daftar topics',
+        error: error.message
+      });
+    }
+  }
+
+  // GET /api/news - Mendapatkan semua berita dengan filter opsional dan pagination
   static async getAllNews(request, reply) {
     try {
-      const { status, topic, page, limit, order_by, sort_type } = request.query;
-      
+      const { status, topic_id, q, page, limit, order_by, sort_type } = request.query;
       const filters = {};
       if (status) filters.status = status;
-      if (topic) filters.topic = topic;
+      if (topic_id) filters.topic_id = topic_id;
+      if (q) filters.title_search = q.trim();
       
       const pagination = {
         page: page ? parseInt(page) : 1,
@@ -29,12 +58,15 @@ class NewsController {  // GET /api/news - Mendapatkan semua berita dengan filte
           success: false,
           message: 'Parameter limit harus antara 1-100'
         });
-      }
-        const result = await NewsModel.getAll(filters, pagination);
+      }        const result = await NewsModel.getAll(filters, pagination);
+      
+      const message = filters.title_search 
+        ? `Berhasil mencari berita dengan kata kunci "${filters.title_search}"`
+        : 'Berhasil mengambil data berita';
       
       return reply.code(200).send({
         success: true,
-        message: 'Berhasil mengambil data berita',
+        message: message,
         data: result.data,
         pagination: result.pagination
       });

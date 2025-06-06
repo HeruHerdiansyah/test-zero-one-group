@@ -260,9 +260,104 @@ Implementasikan security best practices:
 Review code untuk potential vulnerabilities.
 ```
 
+### 6. API Enhancement & Feature Updates
+
+#### Topic ID Filter Implementation
+```prompt
+Update API News endpoint untuk menggunakan topic_id filter instead of text-based topic filter:
+
+Requirements:
+1. Ganti parameter 'topic' dengan 'topic_id' (integer)
+2. Tambah endpoint GET /api/news/topics untuk mendapatkan dropdown data
+3. Implementasi exact match filtering berdasarkan topic ID
+4. Pertahankan semua topics yang dimiliki news item dalam response (bukan hanya filtered topic)
+
+Technical considerations:
+- Update query di newsModel untuk menggunakan subquery approach
+- Maintain backward compatibility selama masa transisi
+- Update schema validation untuk topic_id parameter
+- Add comprehensive test coverage untuk perubahan ini
+```
+
+#### Title Search Functionality
+```prompt
+Implementasikan search functionality untuk news berdasarkan title:
+
+Requirements:
+1. Tambah parameter 'q' untuk search query pada GET /api/news
+2. Search menggunakan case-insensitive partial match (ILIKE)
+3. Kombinasikan dengan filter topic_id jika ada
+4. Update response message untuk menunjukkan search context
+
+Implementation:
+- Gunakan PostgreSQL ILIKE operator untuk case-insensitive search
+- Trim whitespace dari search query
+- Handle empty search gracefully
+- Optimize query performance dengan proper indexing
+- Update API documentation dengan examples
+```
+
+#### Enhanced Response Format
+```prompt
+Tingkatkan format response untuk memberikan context yang lebih baik:
+
+1. Dynamic messages berdasarkan filter yang digunakan:
+   - Default: "Berhasil mengambil data berita"
+   - With search: "Berhasil mencari berita dengan kata kunci '{query}'"
+   - With filters: Context-aware messages
+
+2. Maintain consistent response structure:
+   - success: boolean
+   - message: string (contextual)
+   - data: array/object
+   - pagination: object (untuk list endpoints)
+
+3. Error handling improvements:
+   - More descriptive error messages
+   - Proper HTTP status codes
+   - Include validation details when applicable
+```
+
+#### Database Query Optimization
+```prompt
+Optimasi query untuk menampilkan semua topics ketika filtering berdasarkan topic_id:
+
+Challenge: Ketika filter berdasarkan topic_id, hanya topic yang di-filter yang muncul dalam response, padahal seharusnya menampilkan semua topics yang dimiliki news item tersebut.
+
+Solution approach:
+1. Gunakan subquery untuk filtering: WHERE n.id IN (SELECT news_id FROM news_topics WHERE topic_id = ?)
+2. Maintain main JOIN untuk mengambil semua topics
+3. Ensure performance tidak terdegradasi dengan indexing yang proper
+4. Test dengan data volume yang besar
+
+Hasil: News dengan multiple topics akan menampilkan semua topics-nya, bukan hanya yang di-filter.
+```
+
+#### API Documentation Updates
+```prompt
+Update dokumentasi API untuk mencerminkan perubahan terbaru:
+
+1. OpenAPI Specification Updates:
+   - Update parameter schema (topic_id vs topic)
+   - Add new endpoint /api/news/topics
+   - Update example requests dan responses
+   - Add description untuk new search functionality
+
+2. README.md Updates:
+   - Update API endpoints section
+   - Update filter parameters documentation
+   - Add examples untuk new features
+   - Update feature list dengan enhancements
+
+3. System Design Updates:
+   - Update flow diagrams jika diperlukan
+   - Document new query patterns
+   - Update database interaction flow
+```
+
 ## 📝 Recent Implementation Prompts
 
-### Implementation of Pagination and Soft Delete (June 2025)
+### Implementation of Pagination and Soft Delete
 
 #### Final Implementation Request
 ```prompt

@@ -93,7 +93,35 @@ const newsSchemas = {  // Schema untuk response berita
   }
 };
 
-async function newsRoutes(fastify, options) {  // GET /api/news - Mendapatkan semua berita dengan filter
+async function newsRoutes(fastify, options) {
+  // GET /api/news/topics - Mendapatkan daftar topics untuk dropdown
+  fastify.get('/news/topics', {
+    schema: {
+      description: 'Mendapatkan daftar topics untuk dropdown',
+      tags: ['News'],
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+            data: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'integer' },
+                  name: { type: 'string' }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }, NewsController.getTopicsForDropdown);
+
+  // GET /api/news - Mendapatkan semua berita dengan filter
   fastify.get('/news', {
     schema: {
       description: 'Mendapatkan semua berita dengan filter opsional dan pagination',
@@ -106,9 +134,13 @@ async function newsRoutes(fastify, options) {  // GET /api/news - Mendapatkan se
             enum: ['draft', 'published', 'deleted'],
             description: 'Filter berdasarkan status' 
           },
-          topic: { 
+          topic_id: { 
+            type: 'integer',
+            description: 'Filter berdasarkan ID topic' 
+          },
+          q: { 
             type: 'string',
-            description: 'Filter berdasarkan nama topic (pencarian partial)' 
+            description: 'Pencarian berdasarkan judul berita' 
           },
           page: {
             type: 'integer',
